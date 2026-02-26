@@ -668,7 +668,7 @@
               <label>Password</label
               ><input type="password" id="regPassword" placeholder="••••••••" />
             </div>
-            <button class="btn-primary" onclick="doRegister()">
+            <button class="btn-primary" onclick="doCreateAccount()">
               Create Account
             </button>
           </div>
@@ -1197,7 +1197,7 @@ lsus-club-manager/
         buildNav();
         showPage('dashboardPage');
       }
-      async function doRegister() {
+      async function doCreateAccount() {
         const full_name = $('regName').value.trim(),
           email = $('regEmail').value.trim(),
           password = $('regPassword').value;

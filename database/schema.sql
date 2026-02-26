@@ -173,13 +173,16 @@ BEGIN
 END;
 GO
 
--- When a club is approved, promote its creator to Club Admin (if they are still a Student).
+-- When a club is approved:
+--   1. Promote its creator to Club Admin (if they are still a Student).
+--   2. Automatically add the creator as a member of the club.
 -- Mirrors the demotion logic in trg_ClubMemberships_Cleanup.
 CREATE TRIGGER trg_Clubs_ApprovePromotion ON Clubs AFTER UPDATE
 AS
 BEGIN
     SET NOCOUNT ON;
 
+    -- 1. Promote creator to ClubAdmin if they are still a Student
     UPDATE u
     SET u.RoleID = (SELECT RoleID FROM Roles WHERE RoleName = 'ClubAdmin')
     FROM Users u
@@ -188,6 +191,18 @@ BEGIN
     WHERE i.ApprovalStatus = 'Approved'
       AND d.ApprovalStatus <> 'Approved'
       AND u.RoleID = (SELECT RoleID FROM Roles WHERE RoleName = 'Student');
+
+    -- 2. Add the creator as a club member if not already one
+    INSERT INTO ClubMemberships (UserID, ClubID)
+    SELECT i.CreatedBy, i.ClubID
+    FROM inserted i
+    JOIN deleted  d ON d.ClubID = i.ClubID
+    WHERE i.ApprovalStatus = 'Approved'
+      AND d.ApprovalStatus <> 'Approved'
+      AND NOT EXISTS (
+          SELECT 1 FROM ClubMemberships cm
+          WHERE cm.UserID = i.CreatedBy AND cm.ClubID = i.ClubID
+      );
 END;
 GO
 
