@@ -366,19 +366,19 @@ INSERT INTO Roles (RoleName) VALUES ('Student'), ('ClubAdmin'), ('Admin');
 
 -- Passwords are bcrypt hashes of: student123, clubadmin123, admin123
 INSERT INTO Users (FullName, Email, PasswordHash, RoleID) VALUES
-('John Student',    'john@lsus.edu',    '$2b$12$eKH3e1y2z3M4n5o6p7q8r.SomeHashForStudent',   1),
-('Sarah ClubAdmin', 'sarah@lsus.edu',   '$2b$12$aBC1d2e3f4G5h6i7j8k9l.SomeHashForClubAdmin', 2),
-('Mike Admin',      'mike@lsus.edu',    '$2b$12$xYZ9a8b7c6D5e4f3g2h1i.SomeHashForAdmin',     3),
-('Alice Student',   'alice@lsus.edu',   '$2b$12$eKH3e1y2z3M4n5o6p7q8r.SomeHashForStudent',   1),
-('Bob Student',     'bob@lsus.edu',     '$2b$12$eKH3e1y2z3M4n5o6p7q8r.SomeHashForStudent',   1);
+('John Student',    'john@lsus.edu',    '$2a$12$SvRkKMPY3bOl0MDFEEgy6.eu4YnOsUYm.8C8Ge7i2xBNnGbZS4.oO',   1),
+('Sarah ClubAdmin', 'sarah@lsus.edu',   '$2b$12$u.JcgOBwve72IV1/CLw5GOx.vd5OYa9bIHKhZdHWxyC8mW/ZQwLsW', 2),
+('Mike Admin',      'mike@lsus.edu',    '$2b$12$5gYoZPQld9MQQO8kbv53Ae63Nbr9YZ/wFZZ2bMXlk0hn32RGo84yS',     3),
+('Alice Student',   'alice@lsus.edu',   '$2a$12$SvRkKMPY3bOl0MDFEEgy6.eu4YnOsUYm.8C8Ge7i2xBNnGbZS4.oO',   1),
+('Bob Student',     'bob@lsus.edu',     '$2a$12$SvRkKMPY3bOl0MDFEEgy6.eu4YnOsUYm.8C8Ge7i2xBNnGbZS4.oO',   1);
 GO
 
 -- NOTE: Run the Flask app which will create real bcrypt hashes.
 -- Or manually hash passwords with: python -c "import bcrypt; print(bcrypt.hashpw(b'password', bcrypt.gensalt()).decode())"
 -- Then UPDATE Users SET PasswordHash = '<hash>' WHERE Email = '<email>';
 
-EXEC SubmitClub @ClubName='Tech Club',   @Description='Technology and programming enthusiasts.', @CreatedBy=2;
-EXEC SubmitClub @ClubName='Art Society', @Description='Visual arts, painting, and design.',       @CreatedBy=1;
+EXEC SubmitClub @ClubName='Tech Club', @Description='Technology and programming enthusiasts.', @CreatedBy=2;
+EXEC SubmitClub @ClubName='Art Society', @Description='Visual arts, painting, and design.', @CreatedBy=1;
 EXEC ApproveClub @ClubID=1, @AdminID=3;
 
 EXEC AddEvent @ClubID=1, @EventName='Hackathon 2026',  @Description='24-hour coding challenge.', @EventDate='2026-04-01 09:00', @Location='Room 101', @UserID=2;
