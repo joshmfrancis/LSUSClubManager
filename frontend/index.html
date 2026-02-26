@@ -672,6 +672,9 @@
             </button>
           </div>
         </div>
+        <p style="text-align:center;margin-top:1.2rem;font-size:.82rem;color:#aaa">
+          <span style="cursor:pointer;text-decoration:underline" onclick="showAbout()">ℹ️ About this app</span>
+        </p>
       </div>
     </div>
 
@@ -766,6 +769,55 @@
       <div id="adminPendingClubs"></div>
       <div id="adminUsers" style="display: none"></div>
       <div id="adminAudit" style="display: none"></div>
+    </div>
+
+    <!-- ABOUT -->
+    <div class="page" id="aboutPage">
+      <div class="page-header">
+        <div class="page-title">ℹ️ <span>About LSUS Club Manager</span></div>
+        <button class="btn btn-outline btn-sm" onclick="backFromAbout()">← Back</button>
+      </div>
+      <div class="section" style="max-width:780px">
+        <p style="font-size:1rem;color:#ccc;margin-bottom:1.5rem">
+          A campus event &amp; club management platform built for LSUS students, club admins, and site administrators.
+        </p>
+
+        <div class="section-title">👥 Team</div>
+        <p style="color:#ccc;margin-bottom:1.5rem">Jadyn Falls &nbsp;·&nbsp; Joshua Francis &nbsp;·&nbsp; Christopher Kouba</p>
+
+        <div class="section-title">🛠 Technology Stack</div>
+        <p style="color:#ccc;margin-bottom:1.5rem">Microsoft SQL Server (SSMS) &nbsp;·&nbsp; Python Flask &nbsp;·&nbsp; HTML / CSS / JavaScript</p>
+
+        <div class="section-title">🎓 Roles &amp; Permissions</div>
+        <div class="table-wrap" style="margin-bottom:1.5rem">
+          <table>
+            <thead><tr><th>Feature</th><th>Student</th><th>Club Admin</th><th>Site Admin</th></tr></thead>
+            <tbody>
+              <tr><td>Register / log in</td><td>✅</td><td>✅</td><td>✅</td></tr>
+              <tr><td>View &amp; join clubs</td><td>✅</td><td>✅</td><td>✅</td></tr>
+              <tr><td>Submit club for review</td><td>✅</td><td>✅</td><td>✅</td></tr>
+              <tr><td>Register for events</td><td>✅</td><td>✅</td><td>✅</td></tr>
+              <tr><td>Create / edit / delete events</td><td>❌</td><td>✅</td><td>✅</td></tr>
+              <tr><td>Add / remove club members</td><td>❌</td><td>✅</td><td>✅</td></tr>
+              <tr><td>Approve / reject clubs</td><td>❌</td><td>❌</td><td>✅</td></tr>
+              <tr><td>Assign / revoke Club Admin</td><td>❌</td><td>❌</td><td>✅</td></tr>
+              <tr><td>Assign / revoke Site Admin</td><td>❌</td><td>❌</td><td>✅</td></tr>
+              <tr><td>View audit log</td><td>❌</td><td>❌</td><td>✅</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="section-title">🏗 Project Structure</div>
+        <pre style="background:var(--card);border:1px solid var(--gray);border-radius:8px;padding:1rem;font-size:.82rem;color:#ccc;overflow-x:auto">lsus-club-manager/
+├── database/
+│   └── schema.sql       ← Tables, triggers, stored procs, seed data
+├── backend/
+│   ├── app.py           ← Flask REST API
+│   ├── requirements.txt ← Python dependencies
+│   └── .env.example     ← Copy to .env and configure
+└── frontend/
+    └── index.html       ← Single-file frontend</pre>
+      </div>
     </div>
 
     <!-- MODALS -->
@@ -988,6 +1040,18 @@
         if (p === 'eventsPage') loadEvents();
         if (p === 'adminPage') loadAdminPending();
       }
+      function showAbout() {
+        $('authPage').style.display = 'none';
+        showPage('aboutPage');
+      }
+      function backFromAbout() {
+        document.querySelectorAll('.page').forEach((el) => el.classList.remove('active'));
+        if (me) {
+          showPage('dashboardPage');
+        } else {
+          $('authPage').style.display = 'block';
+        }
+      }
       function buildNav() {
         $('navbar').style.display = 'flex';
         $('navUserName').textContent = me.name;
@@ -996,6 +1060,7 @@
           ['🏠 Dashboard', 'dashboardPage'],
           ['🏛 Clubs', 'clubsPage'],
           ['📅 Events', 'eventsPage'],
+          ['ℹ️ About', 'aboutPage'],
         ];
         if (me.role === 'Admin') items.push(['⚙️ Admin', 'adminPage']);
         $('navLinks').innerHTML = items
@@ -1668,6 +1733,8 @@
       <td style="display:flex;gap:6px;flex-wrap:wrap">
         ${u.RoleName === 'Student' ? `<button class="btn btn-sm btn-purple" onclick="assignCA(${u.UserID})">Make Club Admin</button>` : ''}
         ${u.RoleName === 'ClubAdmin' ? `<button class="btn btn-sm btn-danger"  onclick="revokeCA(${u.UserID})">Revoke Club Admin</button>` : ''}
+        ${u.RoleName !== 'Admin' ? `<button class="btn btn-sm btn-purple" style="background:#b45309" onclick="assignAdmin(${u.UserID})">Make Site Admin</button>` : ''}
+        ${u.RoleName === 'Admin' ? `<button class="btn btn-sm btn-danger" onclick="revokeAdmin(${u.UserID})">Revoke Admin</button>` : ''}
       </td></tr>`,
       )
       .join('')}
@@ -1684,6 +1751,18 @@
         const r = await api(`/api/users/${id}/revoke-club-admin`, {
           method: 'PUT',
         });
+        alert(r.message || r.error);
+        loadAdminUsers();
+      }
+      async function assignAdmin(id) {
+        if (!confirm('Grant this user full Site Admin access?')) return;
+        const r = await api(`/api/users/${id}/assign-admin`, { method: 'PUT' });
+        alert(r.message || r.error);
+        loadAdminUsers();
+      }
+      async function revokeAdmin(id) {
+        if (!confirm('Revoke this user\'s Admin role? They will become a Student.')) return;
+        const r = await api(`/api/users/${id}/revoke-admin`, { method: 'PUT' });
         alert(r.message || r.error);
         loadAdminUsers();
       }

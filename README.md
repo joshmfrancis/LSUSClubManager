@@ -151,13 +151,15 @@ You should see:
 ## Step 3 — Open the Frontend
 
 1. Navigate to the `frontend/` folder
-2. Open `index.html` in a browser  
+2. Open `index.html` in a browser
    (double-click, or right-click → Open with Chrome/Edge)
 
 > **Tip:** For best results, use a local server like VS Code's **Live Server** extension.
 > Right-click `index.html` → "Open with Live Server" (runs at http://127.0.0.1:5500)
 
 3. Log in with one of the demo accounts listed above.
+
+> **About page:** An **ℹ️ About** page is publicly visible — accessible from the login screen (no account needed) and from the navbar when logged in. It shows the project description, team, tech stack, and role permissions.
 
 ---
 
@@ -203,6 +205,8 @@ You should see:
 | GET    | /api/users | Admin only |
 | PUT    | /api/users/:id/assign-club-admin | Admin only |
 | PUT    | /api/users/:id/revoke-club-admin | Admin only |
+| PUT    | /api/users/:id/assign-admin | Admin only |
+| PUT    | /api/users/:id/revoke-admin | Admin only |
 | GET    | /api/audit | Admin only |
 
 ---
@@ -221,6 +225,7 @@ You should see:
 | Add/remove members | ❌ | ✅ | ✅ |
 | Approve/reject clubs | ❌ | ❌ | ✅ |
 | Assign/revoke ClubAdmin | ❌ | ❌ | ✅ |
+| Assign/revoke Admin | ❌ | ❌ | ✅ |
 | View audit log | ❌ | ❌ | ✅ |
 | View all users | ❌ | ❌ | ✅ |
 

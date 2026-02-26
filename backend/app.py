@@ -668,6 +668,36 @@ def revoke_club_admin(user_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
+@app.route("/api/users/<int:user_id>/assign-admin", methods=["PUT"])
+@role_required("Admin")
+def assign_admin(user_id):
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        set_session_ctx(cur, g.user["user_id"])
+        cur.execute("UPDATE Users SET RoleID=3 WHERE UserID=?", user_id)
+        conn.commit()
+        conn.close()
+        return jsonify({"message": "Admin role assigned."})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/users/<int:user_id>/revoke-admin", methods=["PUT"])
+@role_required("Admin")
+def revoke_admin(user_id):
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        set_session_ctx(cur, g.user["user_id"])
+        cur.execute("UPDATE Users SET RoleID=1 WHERE UserID=?", user_id)
+        conn.commit()
+        conn.close()
+        return jsonify({"message": "Admin role revoked."})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 # ===========================================================
 # AUDIT LOG
 # ===========================================================
