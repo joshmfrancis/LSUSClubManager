@@ -1092,6 +1092,7 @@
         const approved = ca.filter((c) => c.ApprovalStatus === 'Approved');
         const upcoming = ea
           .filter((e) => parseLocalDate(e.EventDate) > new Date())
+          .sort((a, b) => parseLocalDate(a.EventDate) - parseLocalDate(b.EventDate))
           .slice(0, 5);
 
         $('dashStats').innerHTML = `
