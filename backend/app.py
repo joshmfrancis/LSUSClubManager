@@ -624,14 +624,20 @@ def get_event_attendees(event_id):
 
 
 @app.route("/api/users", methods=["GET"])
-@role_required("Admin")
+@role_required("Admin", "ClubAdmin")
 def get_users():
     try:
         conn = get_db()
         cur = conn.cursor()
-        cur.execute(
-            "SELECT u.UserID, u.FullName, u.Email, r.RoleName, u.CreatedAt "
-            "FROM Users u JOIN Roles r ON u.RoleID=r.RoleID ORDER BY u.FullName")
+        if g.user["role"] == "ClubAdmin":
+            cur.execute(
+                "SELECT u.UserID, u.FullName, u.Email, r.RoleName, u.CreatedAt "
+                "FROM Users u JOIN Roles r ON u.RoleID=r.RoleID "
+                "WHERE r.RoleName='Student' ORDER BY u.FullName")
+        else:
+            cur.execute(
+                "SELECT u.UserID, u.FullName, u.Email, r.RoleName, u.CreatedAt "
+                "FROM Users u JOIN Roles r ON u.RoleID=r.RoleID ORDER BY u.FullName")
         users = rows_to_list(cur, cur.fetchall())
         conn.close()
         return jsonify(users)
