@@ -173,6 +173,24 @@ BEGIN
 END;
 GO
 
+-- When a club is approved, promote its creator to Club Admin (if they are still a Student).
+-- Mirrors the demotion logic in trg_ClubMemberships_Cleanup.
+CREATE TRIGGER trg_Clubs_ApprovePromotion ON Clubs AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE u
+    SET u.RoleID = (SELECT RoleID FROM Roles WHERE RoleName = 'ClubAdmin')
+    FROM Users u
+    JOIN inserted i ON u.UserID = i.CreatedBy
+    JOIN deleted  d ON d.ClubID  = i.ClubID
+    WHERE i.ApprovalStatus = 'Approved'
+      AND d.ApprovalStatus <> 'Approved'
+      AND u.RoleID = (SELECT RoleID FROM Roles WHERE RoleName = 'Student');
+END;
+GO
+
 -- ==========================================================================================================================
 -- STORED PROCEDURES
 -- ==========================================================================================================================
