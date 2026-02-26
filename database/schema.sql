@@ -196,7 +196,7 @@ GO
 -- ==========================================================================================================================
 
 -- Submit a new club (creates in Pending state)
-CREATE PROCEDURE SubmitClub
+CREATE OR ALTER PROCEDURE SubmitClub
     @ClubName    VARCHAR(100),
     @Description VARCHAR(500),
     @CreatedBy   INT
@@ -210,7 +210,7 @@ END;
 GO
 
 -- Approve a club submission
-CREATE PROCEDURE ApproveClub
+CREATE OR ALTER PROCEDURE ApproveClub
     @ClubID  INT,
     @AdminID INT
 AS
@@ -221,7 +221,7 @@ END;
 GO
 
 -- Reject a club submission
-CREATE PROCEDURE RejectClub
+CREATE OR ALTER PROCEDURE RejectClub
     @ClubID  INT,
     @AdminID INT
 AS
@@ -232,7 +232,7 @@ END;
 GO
 
 -- Add an event to a club
-CREATE PROCEDURE AddEvent
+CREATE OR ALTER PROCEDURE AddEvent
     @ClubID      INT,
     @EventName   VARCHAR(100),
     @Description VARCHAR(500),
@@ -249,7 +249,7 @@ END;
 GO
 
 -- Edit an event
-CREATE PROCEDURE EditEvent
+CREATE OR ALTER PROCEDURE EditEvent
     @EventID     INT,
     @EventName   VARCHAR(100),
     @Description VARCHAR(500),
@@ -269,7 +269,7 @@ END;
 GO
 
 -- Delete an event
-CREATE PROCEDURE DeleteEvent
+CREATE OR ALTER PROCEDURE DeleteEvent
     @EventID INT,
     @UserID  INT
 AS
@@ -281,7 +281,7 @@ END;
 GO
 
 -- Register a student for an event
-CREATE PROCEDURE RegisterForEvent
+CREATE OR ALTER PROCEDURE RegisterForEvent
     @EventID INT,
     @UserID  INT
 AS
@@ -293,7 +293,7 @@ END;
 GO
 
 -- Unregister a student from an event
-CREATE PROCEDURE UnregisterFromEvent
+CREATE OR ALTER PROCEDURE UnregisterFromEvent
     @EventID INT,
     @UserID  INT
 AS
@@ -304,7 +304,7 @@ END;
 GO
 
 -- Add a student to a club
-CREATE PROCEDURE AddStudentToClub
+CREATE OR ALTER PROCEDURE AddStudentToClub
     @UserID      INT,
     @ClubID      INT,
     @PerformedBy INT
@@ -317,7 +317,7 @@ END;
 GO
 
 -- Remove a student from a club
-CREATE PROCEDURE RemoveStudentFromClub
+CREATE OR ALTER PROCEDURE RemoveStudentFromClub
     @UserID      INT,
     @ClubID      INT,
     @PerformedBy INT
@@ -329,7 +329,7 @@ END;
 GO
 
 -- Assign Club Admin role to a student
-CREATE PROCEDURE AssignClubAdmin
+CREATE OR ALTER PROCEDURE AssignClubAdmin
     @TargetUserID INT,
     @AdminID      INT
 AS
@@ -340,7 +340,7 @@ END;
 GO
 
 -- Revoke Club Admin role (back to Student)
-CREATE PROCEDURE RevokeClubAdmin
+CREATE OR ALTER PROCEDURE RevokeClubAdmin
     @TargetUserID INT,
     @AdminID      INT
 AS
@@ -354,14 +354,14 @@ GO
 -- VIEWS (useful read queries)
 -- ==========================================================================================================================
 
-CREATE VIEW vw_ApprovedClubs AS
+CREATE OR ALTER VIEW vw_ApprovedClubs AS
 SELECT c.ClubID, c.ClubName, c.Description, u.FullName AS CreatedBy, c.CreatedAt
 FROM Clubs c
 JOIN Users u ON c.CreatedBy = u.UserID
 WHERE c.ApprovalStatus = 'Approved';
 GO
 
-CREATE VIEW vw_EventsWithClub AS
+CREATE OR ALTER VIEW vw_EventsWithClub AS
 SELECT e.EventID, e.EventName, e.Description, e.EventDate, e.Location,
        c.ClubName, c.ClubID
 FROM Events e
@@ -369,7 +369,7 @@ JOIN Clubs c ON e.ClubID = c.ClubID
 WHERE c.ApprovalStatus = 'Approved';
 GO
 
-CREATE VIEW vw_RegistrationCounts AS
+CREATE OR ALTER VIEW vw_RegistrationCounts AS
 SELECT e.EventID, e.EventName, COUNT(r.RegistrationID) AS AttendeeCount
 FROM Events e
 LEFT JOIN Registrations r ON e.EventID = r.EventID
