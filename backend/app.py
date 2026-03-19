@@ -24,6 +24,7 @@ class ISODateJSONProvider(DefaultJSONProvider):
     ISO strings without a timezone marker are parsed as local time by our
     frontend helper, keeping displayed times correct.
     """
+
     def default(self, obj):
         if isinstance(obj, datetime):
             return obj.isoformat()
@@ -293,9 +294,7 @@ def submit_club():
     try:
         conn = get_db()
         cur = conn.cursor()
-        set_session_ctx(cur, g.user["user_id"])
-        cur.execute("INSERT INTO Clubs (ClubName,Description,CreatedBy) VALUES (?,?,?)",
-                    name, desc, g.user["user_id"])
+        cur.execute("EXEC SubmitClub ?, ?, ?", name, desc, g.user["user_id"])
         conn.commit()
         conn.close()
         return jsonify({"message": "Club submitted for approval."}), 201
@@ -309,9 +308,7 @@ def approve_club(club_id):
     try:
         conn = get_db()
         cur = conn.cursor()
-        set_session_ctx(cur, g.user["user_id"])
-        cur.execute(
-            "UPDATE Clubs SET ApprovalStatus='Approved' WHERE ClubID=?", club_id)
+        cur.execute("EXEC ApproveClub ?, ?", club_id, g.user["user_id"])
         conn.commit()
         conn.close()
         return jsonify({"message": "Club approved."})
@@ -325,9 +322,7 @@ def reject_club(club_id):
     try:
         conn = get_db()
         cur = conn.cursor()
-        set_session_ctx(cur, g.user["user_id"])
-        cur.execute(
-            "UPDATE Clubs SET ApprovalStatus='Rejected' WHERE ClubID=?", club_id)
+        cur.execute("EXEC RejectClub ?, ?", club_id, g.user["user_id"])
         conn.commit()
         conn.close()
         return jsonify({"message": "Club rejected."})
@@ -341,11 +336,8 @@ def join_club(club_id):
     try:
         conn = get_db()
         cur = conn.cursor()
-        set_session_ctx(cur, g.user["user_id"])
-        cur.execute(
-            "IF NOT EXISTS (SELECT 1 FROM ClubMemberships WHERE UserID=? AND ClubID=?) "
-            "INSERT INTO ClubMemberships (UserID,ClubID) VALUES (?,?)",
-            g.user["user_id"], club_id, g.user["user_id"], club_id)
+        cur.execute("EXEC AddStudentToClub ?, ?, ?",
+                    g.user["user_id"], club_id, g.user["user_id"])
         conn.commit()
         conn.close()
         return jsonify({"message": "Joined club."})
@@ -359,9 +351,8 @@ def leave_club(club_id):
     try:
         conn = get_db()
         cur = conn.cursor()
-        set_session_ctx(cur, g.user["user_id"])
-        cur.execute("DELETE FROM ClubMemberships WHERE UserID=? AND ClubID=?",
-                    g.user["user_id"], club_id)
+        cur.execute("EXEC RemoveStudentFromClub ?, ?, ?",
+                    g.user["user_id"], club_id, g.user["user_id"])
         conn.commit()
         conn.close()
         return jsonify({"message": "Left club."})
@@ -399,11 +390,8 @@ def add_member(club_id):
     try:
         conn = get_db()
         cur = conn.cursor()
-        set_session_ctx(cur, g.user["user_id"])
-        cur.execute(
-            "IF NOT EXISTS (SELECT 1 FROM ClubMemberships WHERE UserID=? AND ClubID=?) "
-            "INSERT INTO ClubMemberships (UserID,ClubID) VALUES (?,?)",
-            user_id, club_id, user_id, club_id)
+        cur.execute("EXEC AddStudentToClub ?, ?, ?",
+                    user_id, club_id, g.user["user_id"])
         conn.commit()
         conn.close()
         return jsonify({"message": "Student added to club."})
@@ -419,9 +407,8 @@ def remove_member(club_id, user_id):
     try:
         conn = get_db()
         cur = conn.cursor()
-        set_session_ctx(cur, g.user["user_id"])
-        cur.execute(
-            "DELETE FROM ClubMemberships WHERE UserID=? AND ClubID=?", user_id, club_id)
+        cur.execute("EXEC RemoveStudentFromClub ?, ?, ?",
+                    user_id, club_id, g.user["user_id"])
         conn.commit()
         conn.close()
         return jsonify({"message": "Student removed from club."})
@@ -507,10 +494,8 @@ def add_event(club_id):
     try:
         conn = get_db()
         cur = conn.cursor()
-        set_session_ctx(cur, g.user["user_id"])
-        cur.execute(
-            "INSERT INTO Events (ClubID,EventName,Description,EventDate,Location) VALUES (?,?,?,?,?)",
-            club_id, name, desc, dt, loc)
+        cur.execute("EXEC AddEvent ?, ?, ?, ?, ?, ?",
+                    club_id, name, desc, dt, loc, g.user["user_id"])
         conn.commit()
         conn.close()
         return jsonify({"message": "Event created."}), 201
@@ -537,10 +522,8 @@ def edit_event(event_id):
     try:
         conn = get_db()
         cur = conn.cursor()
-        set_session_ctx(cur, g.user["user_id"])
-        cur.execute(
-            "UPDATE Events SET EventName=?,Description=?,EventDate=?,Location=? WHERE EventID=?",
-            name, desc, dt, loc, event_id)
+        cur.execute("EXEC EditEvent ?, ?, ?, ?, ?, ?",
+                    event_id, name, desc, dt, loc, g.user["user_id"])
         conn.commit()
         conn.close()
         return jsonify({"message": "Event updated."})
@@ -558,9 +541,7 @@ def delete_event(event_id):
     try:
         conn = get_db()
         cur = conn.cursor()
-        set_session_ctx(cur, g.user["user_id"])
-        cur.execute("DELETE FROM Registrations WHERE EventID=?", event_id)
-        cur.execute("DELETE FROM Events WHERE EventID=?", event_id)
+        cur.execute("EXEC DeleteEvent ?, ?", event_id, g.user["user_id"])
         conn.commit()
         conn.close()
         return jsonify({"message": "Event deleted."})
@@ -574,11 +555,7 @@ def register_event(event_id):
     try:
         conn = get_db()
         cur = conn.cursor()
-        set_session_ctx(cur, g.user["user_id"])
-        cur.execute(
-            "IF NOT EXISTS (SELECT 1 FROM Registrations WHERE EventID=? AND UserID=?) "
-            "INSERT INTO Registrations (EventID,UserID) VALUES (?,?)",
-            event_id, g.user["user_id"], event_id, g.user["user_id"])
+        cur.execute("EXEC RegisterForEvent ?, ?", event_id, g.user["user_id"])
         conn.commit()
         conn.close()
         return jsonify({"message": "Registered for event."})
@@ -592,8 +569,7 @@ def unregister_event(event_id):
     try:
         conn = get_db()
         cur = conn.cursor()
-        set_session_ctx(cur, g.user["user_id"])
-        cur.execute("DELETE FROM Registrations WHERE EventID=? AND UserID=?",
+        cur.execute("EXEC UnregisterFromEvent ?, ?",
                     event_id, g.user["user_id"])
         conn.commit()
         conn.close()
@@ -651,8 +627,7 @@ def assign_club_admin(user_id):
     try:
         conn = get_db()
         cur = conn.cursor()
-        set_session_ctx(cur, g.user["user_id"])
-        cur.execute("UPDATE Users SET RoleID=2 WHERE UserID=?", user_id)
+        cur.execute("EXEC AssignClubAdmin ?, ?", user_id, g.user["user_id"])
         conn.commit()
         conn.close()
         return jsonify({"message": "Club Admin role assigned."})
@@ -666,8 +641,7 @@ def revoke_club_admin(user_id):
     try:
         conn = get_db()
         cur = conn.cursor()
-        set_session_ctx(cur, g.user["user_id"])
-        cur.execute("UPDATE Users SET RoleID=1 WHERE UserID=?", user_id)
+        cur.execute("EXEC RevokeClubAdmin ?, ?", user_id, g.user["user_id"])
         conn.commit()
         conn.close()
         return jsonify({"message": "Club Admin role revoked."})
