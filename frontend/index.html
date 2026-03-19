@@ -1369,6 +1369,11 @@ lsus-club-manager/
                 `<button class="btn btn-sm btn-danger"  onclick="rejectClub(${c.ClubID})">Reject</button>`,
               );
             }
+            if (me.role === 'Admin') {
+              acts.push(
+                `<button class="btn btn-sm btn-danger" onclick="deleteClub(${c.ClubID})">Delete</button>`,
+              );
+            }
             return `<div class="card">
       <div class="card-title">${c.ClubName} ${statusBadge} ${memberBadge}</div>
       <div class="card-desc">${c.Description || 'No description.'}</div>
@@ -1409,6 +1414,12 @@ lsus-club-manager/
       async function rejectClub(id) {
         if (!confirm('Reject?')) return;
         const r = await api(`/api/clubs/${id}/reject`, { method: 'PUT' });
+        alert(r.message || r.error);
+        loadClubs();
+      }
+      async function deleteClub(id) {
+        if (!confirm('Permanently delete this club and all its events? This cannot be undone.')) return;
+        const r = await api(`/api/clubs/${id}`, { method: 'DELETE' });
         alert(r.message || r.error);
         loadClubs();
       }
@@ -1795,6 +1806,7 @@ lsus-club-manager/
           <td style="display:flex;gap:6px">
             <button class="btn btn-sm btn-success" onclick="adminApprove(${c.ClubID})">Approve</button>
             <button class="btn btn-sm btn-danger"  onclick="adminReject(${c.ClubID})">Reject</button>
+            <button class="btn btn-sm btn-danger"  onclick="adminDeleteClub(${c.ClubID})">Delete</button>
           </td></tr>`,
           )
           .join('')}</tbody>
@@ -1809,6 +1821,12 @@ lsus-club-manager/
       async function adminReject(id) {
         if (!confirm('Reject?')) return;
         const r = await api(`/api/clubs/${id}/reject`, { method: 'PUT' });
+        alert(r.message || r.error);
+        loadAdminPending();
+      }
+      async function adminDeleteClub(id) {
+        if (!confirm('Permanently delete this club and all its events? This cannot be undone.')) return;
+        const r = await api(`/api/clubs/${id}`, { method: 'DELETE' });
         alert(r.message || r.error);
         loadAdminPending();
       }
