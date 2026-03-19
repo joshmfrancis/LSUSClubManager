@@ -354,6 +354,27 @@ BEGIN
 END;
 GO
 
+-- Delete a club and all associated data
+CREATE OR ALTER PROCEDURE DeleteClub
+    @ClubID  INT,
+    @AdminID INT
+AS
+BEGIN
+    EXEC sp_set_session_context @key = N'UserID', @value = @AdminID;
+    -- 1. Remove registrations for all events in this club
+    DELETE r
+    FROM Registrations r
+    JOIN Events e ON r.EventID = e.EventID
+    WHERE e.ClubID = @ClubID;
+    -- 2. Remove events
+    DELETE FROM Events WHERE ClubID = @ClubID;
+    -- 3. Remove memberships (triggers role demotion if needed)
+    DELETE FROM ClubMemberships WHERE ClubID = @ClubID;
+    -- 4. Remove the club
+    DELETE FROM Clubs WHERE ClubID = @ClubID;
+END;
+GO
+
 -- Revoke Club Admin role (back to Student)
 CREATE OR ALTER PROCEDURE RevokeClubAdmin
     @TargetUserID INT,

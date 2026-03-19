@@ -330,6 +330,20 @@ def reject_club(club_id):
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/clubs/<int:club_id>", methods=["DELETE"])
+@role_required("Admin")
+def delete_club(club_id):
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("EXEC DeleteClub ?, ?", club_id, g.user["user_id"])
+        conn.commit()
+        conn.close()
+        return jsonify({"message": "Club deleted."})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/api/clubs/<int:club_id>/join", methods=["POST"])
 @login_required
 def join_club(club_id):
