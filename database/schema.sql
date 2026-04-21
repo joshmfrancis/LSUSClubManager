@@ -4,9 +4,24 @@
 -- ==========================================================================================================================
 
 -- ==========================================================================================================================
--- DROP TABLES (safe re-run)
+-- DROP TABLES AND SECURITY POLICY (safe re-run)
 -- ==========================================================================================================================
 
+USE LSUSClubManager;
+
+-- 1. Drop the Policy first
+IF EXISTS (SELECT * FROM sys.security_policies WHERE name = 'ClubSecurityPolicy')
+    DROP SECURITY POLICY Security.ClubSecurityPolicy;
+
+-- 2. Drop the Function second
+IF EXISTS (SELECT * FROM sys.objects WHERE name = 'fn_SecurityPredicate')
+    DROP FUNCTION Security.fn_SecurityPredicate;
+
+-- 3. Drop the Schema (Optional)
+IF EXISTS (SELECT * FROM sys.schemas WHERE name = 'Security')
+    DROP SCHEMA Security;
+
+-- 4. Drop the Tables
 IF OBJECT_ID('AuditLog', 'U') IS NOT NULL DROP TABLE AuditLog;
 IF OBJECT_ID('Registrations', 'U') IS NOT NULL DROP TABLE Registrations;
 IF OBJECT_ID('Events', 'U') IS NOT NULL DROP TABLE Events;
@@ -413,6 +428,80 @@ GROUP BY e.EventID, e.EventName;
 GO
 
 -- ==========================================================================================================================
+-- RLS
+-- ==========================================================================================================================
+
+CREATE SCHEMA Security;
+GO
+
+
+CREATE FUNCTION Security.fn_SecurityPredicate(@OwnerID INT, @ClubID INT = NULL, @IsPublicRead BIT = 0)
+    RETURNS TABLE
+WITH SCHEMABINDING
+AS
+RETURN SELECT 1 AS fn_access_result
+WHERE 
+    -- 1. PUBLIC READ: If this flag is 1, the row is always visible for SELECT
+    (@IsPublicRead = 1)
+    
+    -- 2. LOGIN BYPASS: Allows initial login when SESSION_CONTEXT is empty
+    OR (CAST(SESSION_CONTEXT(N'UserID') AS INT) IS NULL)
+
+    -- 3. AUTHENTICATED ACCESS: Rules for logged-in users
+    OR (
+        CAST(SESSION_CONTEXT(N'UserID') AS INT) IS NOT NULL 
+        AND (
+            -- ADMIN: Full access to everything
+            EXISTS (
+                SELECT 1 FROM dbo.Users u 
+                JOIN dbo.Roles r ON u.RoleID = r.RoleID
+                WHERE u.UserID = CAST(SESSION_CONTEXT(N'UserID') AS INT) 
+                AND r.RoleName = 'Admin'
+            )
+            -- OWNERSHIP: User matches the record UserID/OwnerID
+            OR @OwnerID = CAST(SESSION_CONTEXT(N'UserID') AS INT)
+            
+            -- CLUB ADMIN: Management of their specific clubs
+            OR EXISTS (
+                SELECT 1 FROM dbo.Clubs c
+                WHERE c.ClubID = @ClubID 
+                AND c.CreatedBy = CAST(SESSION_CONTEXT(N'UserID') AS INT)
+            )
+        )
+    );
+GO
+
+
+CREATE SECURITY POLICY Security.ClubSecurityPolicy
+
+-- USERS & ROLES: Everyone can see (Filter=1), only Owners/Admins can modify (Block=0)
+ADD FILTER PREDICATE Security.fn_SecurityPredicate(NULL, NULL, 1) ON dbo.Users,
+ADD BLOCK  PREDICATE Security.fn_SecurityPredicate(UserID, NULL, 0) ON dbo.Users AFTER UPDATE,
+
+ADD FILTER PREDICATE Security.fn_SecurityPredicate(NULL, NULL, 1) ON dbo.Roles,
+
+-- CLUBS & EVENTS: Everyone can see (Filter=1), only Admins/Owners can modify (Block=0)
+ADD FILTER PREDICATE Security.fn_SecurityPredicate(NULL, NULL, 1) ON dbo.Clubs,
+ADD BLOCK  PREDICATE Security.fn_SecurityPredicate(CreatedBy, NULL, 0) ON dbo.Clubs AFTER UPDATE,
+
+ADD FILTER PREDICATE Security.fn_SecurityPredicate(NULL, NULL, 1) ON dbo.Events,
+ADD BLOCK  PREDICATE Security.fn_SecurityPredicate(NULL, ClubID, 0) ON dbo.Events AFTER INSERT,
+
+-- MEMBERSHIPS & REGISTRATIONS: Everyone can see (Filter=1), only Owners/Admins can modify (Block=0)
+-- This allows the "Attendee List" and "Member List" to work for all users.
+ADD FILTER PREDICATE Security.fn_SecurityPredicate(NULL, NULL, 1) ON dbo.ClubMemberships,
+ADD BLOCK  PREDICATE Security.fn_SecurityPredicate(UserID, ClubID, 0) ON dbo.ClubMemberships AFTER INSERT,
+
+ADD FILTER PREDICATE Security.fn_SecurityPredicate(NULL, NULL, 1) ON dbo.Registrations,
+ADD BLOCK  PREDICATE Security.fn_SecurityPredicate(UserID, NULL, 0) ON dbo.Registrations AFTER INSERT,
+
+-- AUDIT LOG: Site Admin only (Strict Filter=0)
+ADD FILTER PREDICATE Security.fn_SecurityPredicate(NULL, NULL, 0) ON dbo.AuditLog
+
+WITH (STATE = ON);
+GO
+
+-- ==========================================================================================================================
 -- SEED DATA
 -- ==========================================================================================================================
 
@@ -443,3 +532,15 @@ EXEC RegisterForEvent @EventID=1, @UserID=1;
 
 SELECT * FROM AuditLog;
 GO
+
+
+
+SELECT * FROM Roles;
+SELECT * FROM Users;
+SELECT * FROM AuditLog;
+SELECT * FROM Clubs;
+SELECT * FROM Events;
+
+UPDATE Users SET PasswordHash='$2b$12$Q.p7nf13jNn027OhBCV2I.h7sjRFytMppzCf518SvdGG2kWj03h7C' WHERE Email='alice@lsus.edu';
+UPDATE Users SET PasswordHash='$2b$12$seRsvdpKVO1cr3Zt9P8CQuTST0.dKzrWuv01zVidsFGk1M7zsejfa' WHERE Email='sarah@lsus.edu';
+UPDATE Users SET PasswordHash='$2b$12$UpIUqV.1QBTWSn72J5LkE.G2pGCdodtzOjRUyxPGLKjMD2HSd.HaS' WHERE Email='mike@lsus.edu';
