@@ -104,6 +104,7 @@ def parse_dt(s):
 def user_owns_club(user_id, club_id):
     conn = get_db()
     cur = conn.cursor()
+    set_session_ctx(cur, g.user["user_id"])
     cur.execute(
         "SELECT 1 FROM Clubs c "
         "JOIN Users u ON u.UserID = c.CreatedBy "
@@ -118,6 +119,7 @@ def user_owns_club(user_id, club_id):
 def get_event_club_id(event_id):
     conn = get_db()
     cur = conn.cursor()
+    set_session_ctx(cur, g.user["user_id"])
     cur.execute("SELECT ClubID FROM Events WHERE EventID=?", event_id)
     row = cur.fetchone()
     conn.close()
@@ -199,7 +201,7 @@ def login():
         row = cur.fetchone()
         conn.close()
         if not row:
-            return jsonify({"error": "Invalid credentials."}), 401
+            return jsonify({"error": "Invalid credentials2."}), 401
         user_id, full_name, pw_hash, role = row
         if not bcrypt.checkpw(password.encode(), pw_hash.encode()):
             return jsonify({"error": "Invalid credentials."}), 401
@@ -239,6 +241,7 @@ def get_clubs():
     try:
         conn = get_db()
         cur = conn.cursor()
+        set_session_ctx(cur, g.user["user_id"])
         base_select = (
             "SELECT c.ClubID, c.ClubName, c.Description, c.ApprovalStatus, "
             "u.FullName AS CreatedBy, c.CreatedAt, c.CreatedBy AS CreatedByID, "
@@ -266,6 +269,7 @@ def get_club(club_id):
     try:
         conn = get_db()
         cur = conn.cursor()
+        set_session_ctx(cur, g.user["user_id"])
         cur.execute(
             "SELECT c.ClubID, c.ClubName, c.Description, c.ApprovalStatus, "
             "u.FullName AS CreatedBy, c.CreatedAt, c.CreatedBy AS CreatedByID, "
@@ -294,6 +298,7 @@ def submit_club():
     try:
         conn = get_db()
         cur = conn.cursor()
+        set_session_ctx(cur, g.user["user_id"])
         cur.execute("EXEC SubmitClub ?, ?, ?", name, desc, g.user["user_id"])
         conn.commit()
         conn.close()
@@ -308,6 +313,7 @@ def approve_club(club_id):
     try:
         conn = get_db()
         cur = conn.cursor()
+        set_session_ctx(cur, g.user["user_id"])
         cur.execute("EXEC ApproveClub ?, ?", club_id, g.user["user_id"])
         conn.commit()
         conn.close()
@@ -322,6 +328,7 @@ def reject_club(club_id):
     try:
         conn = get_db()
         cur = conn.cursor()
+        set_session_ctx(cur, g.user["user_id"])
         cur.execute("EXEC RejectClub ?, ?", club_id, g.user["user_id"])
         conn.commit()
         conn.close()
@@ -336,6 +343,7 @@ def delete_club(club_id):
     try:
         conn = get_db()
         cur = conn.cursor()
+        set_session_ctx(cur, g.user["user_id"])
         cur.execute("EXEC DeleteClub ?, ?", club_id, g.user["user_id"])
         conn.commit()
         conn.close()
@@ -350,6 +358,7 @@ def join_club(club_id):
     try:
         conn = get_db()
         cur = conn.cursor()
+        set_session_ctx(cur, g.user["user_id"])
         cur.execute("EXEC AddStudentToClub ?, ?, ?",
                     g.user["user_id"], club_id, g.user["user_id"])
         conn.commit()
@@ -365,6 +374,7 @@ def leave_club(club_id):
     try:
         conn = get_db()
         cur = conn.cursor()
+        set_session_ctx(cur, g.user["user_id"])
         cur.execute("EXEC RemoveStudentFromClub ?, ?, ?",
                     g.user["user_id"], club_id, g.user["user_id"])
         conn.commit()
@@ -380,6 +390,7 @@ def get_club_members(club_id):
     try:
         conn = get_db()
         cur = conn.cursor()
+        set_session_ctx(cur, g.user["user_id"])
         cur.execute(
             "SELECT u.UserID, u.FullName, u.Email, r.RoleName, cm.JoinedAt "
             "FROM ClubMemberships cm "
@@ -404,6 +415,7 @@ def add_member(club_id):
     try:
         conn = get_db()
         cur = conn.cursor()
+        set_session_ctx(cur, g.user["user_id"])
         cur.execute("EXEC AddStudentToClub ?, ?, ?",
                     user_id, club_id, g.user["user_id"])
         conn.commit()
@@ -421,6 +433,7 @@ def remove_member(club_id, user_id):
     try:
         conn = get_db()
         cur = conn.cursor()
+        set_session_ctx(cur, g.user["user_id"])
         cur.execute("EXEC RemoveStudentFromClub ?, ?, ?",
                     user_id, club_id, g.user["user_id"])
         conn.commit()
@@ -441,6 +454,7 @@ def get_events():
     try:
         conn = get_db()
         cur = conn.cursor()
+        set_session_ctx(cur, g.user["user_id"])
         base = (
             "SELECT e.EventID, e.EventName, e.Description, e.EventDate, e.Location, "
             "c.ClubName, c.ClubID, "
@@ -474,6 +488,7 @@ def get_club_events(club_id):
     try:
         conn = get_db()
         cur = conn.cursor()
+        set_session_ctx(cur, g.user["user_id"])
         cur.execute(
             "SELECT e.EventID, e.EventName, e.Description, e.EventDate, e.Location, "
             "(SELECT COUNT(*) FROM Registrations r2 WHERE r2.EventID=e.EventID) AS AttendeeCount, "
@@ -508,6 +523,7 @@ def add_event(club_id):
     try:
         conn = get_db()
         cur = conn.cursor()
+        set_session_ctx(cur, g.user["user_id"])
         cur.execute("EXEC AddEvent ?, ?, ?, ?, ?, ?",
                     club_id, name, desc, dt, loc, g.user["user_id"])
         conn.commit()
@@ -536,6 +552,7 @@ def edit_event(event_id):
     try:
         conn = get_db()
         cur = conn.cursor()
+        set_session_ctx(cur, g.user["user_id"])
         cur.execute("EXEC EditEvent ?, ?, ?, ?, ?, ?",
                     event_id, name, desc, dt, loc, g.user["user_id"])
         conn.commit()
@@ -555,6 +572,7 @@ def delete_event(event_id):
     try:
         conn = get_db()
         cur = conn.cursor()
+        set_session_ctx(cur, g.user["user_id"])
         cur.execute("EXEC DeleteEvent ?, ?", event_id, g.user["user_id"])
         conn.commit()
         conn.close()
@@ -569,6 +587,7 @@ def register_event(event_id):
     try:
         conn = get_db()
         cur = conn.cursor()
+        set_session_ctx(cur, g.user["user_id"])
         cur.execute("EXEC RegisterForEvent ?, ?", event_id, g.user["user_id"])
         conn.commit()
         conn.close()
@@ -583,6 +602,7 @@ def unregister_event(event_id):
     try:
         conn = get_db()
         cur = conn.cursor()
+        set_session_ctx(cur, g.user["user_id"])
         cur.execute("EXEC UnregisterFromEvent ?, ?",
                     event_id, g.user["user_id"])
         conn.commit()
@@ -598,6 +618,7 @@ def get_event_attendees(event_id):
     try:
         conn = get_db()
         cur = conn.cursor()
+        set_session_ctx(cur, g.user["user_id"])
         cur.execute(
             "SELECT u.UserID, u.FullName, u.Email, r.RegistrationDate "
             "FROM Registrations r JOIN Users u ON r.UserID=u.UserID "
@@ -619,6 +640,7 @@ def get_users():
     try:
         conn = get_db()
         cur = conn.cursor()
+        set_session_ctx(cur, g.user["user_id"])
         if g.user["role"] == "ClubAdmin":
             cur.execute(
                 "SELECT u.UserID, u.FullName, u.Email, r.RoleName, u.CreatedAt "
@@ -641,6 +663,7 @@ def assign_club_admin(user_id):
     try:
         conn = get_db()
         cur = conn.cursor()
+        set_session_ctx(cur, g.user["user_id"])
         cur.execute("EXEC AssignClubAdmin ?, ?", user_id, g.user["user_id"])
         conn.commit()
         conn.close()
@@ -655,6 +678,7 @@ def revoke_club_admin(user_id):
     try:
         conn = get_db()
         cur = conn.cursor()
+        set_session_ctx(cur, g.user["user_id"])
         cur.execute("EXEC RevokeClubAdmin ?, ?", user_id, g.user["user_id"])
         conn.commit()
         conn.close()
@@ -703,6 +727,7 @@ def get_audit_log():
     try:
         conn = get_db()
         cur = conn.cursor()
+        set_session_ctx(cur, g.user["user_id"])
         cur.execute(
             "SELECT a.LogID, a.TableName, a.ActionType, a.RecordID, "
             "u.FullName AS ActionBy, a.ActionDate "
